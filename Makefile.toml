@@ -1,0 +1,51 @@
+[tasks.linux_defconfig]
+cwd = "linux"
+command = "make"
+args = ["x86_64_defconfig"]
+
+[tasks.linux_config]
+dependencies = ["linux_defconfig"]
+cwd = "linux"
+command = "./scripts/config"
+args = [
+  "--disable",
+  "MODULE_SIG",
+  "--disable",
+  "CONFIG_RANDOMIZE_BASE",
+  "--enable",
+  "KASAN",
+  "--enable",
+  "KASAN_INLINE",
+]
+
+[tasks.linux_olddefconfig]
+dependencies = ["linux_config"]
+cwd = "linux"
+command = "make"
+args = ["olddefconfig"]
+
+[tasks.linux]
+dependencies = ["linux_olddefconfig"]
+cwd = "linux"
+command = "make"
+args = ["-j"]
+
+[tasks.create_qcow]
+command = "qemu-img"
+args = ["create", "-f", "qcow2", "dvkm.qcow2", "64M"]
+
+[tasks.prepare_qcow]
+dependencies = ["create_qcow"]
+script = [
+  "sudo modprobe nbd",
+  "sudo qemu-nbd -c /dev/nbd0 dvkm.qcow2",
+  "sudo mkfs.ext2 /dev/nbd0",
+  "sudo mkdir -p /mnt/qcow2_mount",
+  "sudo mount /dev/nbd0 /mnt/qcow2_mount",
+]
+
+[tasks.run]
+dependencies = ["linux", "prepare_qcow"]
+
+[tasks.default]
+alias = "run"
