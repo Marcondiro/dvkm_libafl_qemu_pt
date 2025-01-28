@@ -35,17 +35,44 @@ command = "qemu-img"
 args = ["create", "-f", "qcow2", "dvkm.qcow2", "64M"]
 
 [tasks.prepare_qcow]
-dependencies = ["create_qcow"]
+dependencies = ["create_qcow", "module"]
 script = [
   "sudo modprobe nbd",
   "sudo qemu-nbd -c /dev/nbd0 dvkm.qcow2",
   "sudo mkfs.ext2 /dev/nbd0",
   "sudo mkdir -p /mnt/qcow2_mount",
   "sudo mount /dev/nbd0 /mnt/qcow2_mount",
+  "sudo cp Damn_Vulnerable_Kernel_Module/dvkm.ko /mnt/qcow2_mount/",
+  #"sudo cp test_dvkm /mnt/qcow2_mount/",
+  "sudo umount /mnt/qcow2_mount",
+  # Disconnect NBD device
+  "sudo qemu-nbd -d /dev/nbd0",
 ]
 
+[tasks.module]
+cwd = "Damn_Vulnerable_Kernel_Module"
+dependencies = ["linux"]
+script = [
+  "cp Makefile Makefile.bak",
+  "sed -i 's#make -C /lib/modules/$(KVERSION)/build M=$(PWD)#make -I../linux/include -C../linux M=$(PWD)#' Makefile",
+  "make",
+  "mv Makefile.bak Makefile",
+]
+
+[tasks.harness]
+command = "gcc"
+args = [
+  "-I./linux-source/include",
+  "-Wall",
+  "-Wextra",
+  "-no-pie",
+  "-Wl,--section-start=.trigger_bp=0xaabb00",
+  "-o",
+  "harness",
+  "harness.c",
+]
 [tasks.run]
-dependencies = ["linux", "prepare_qcow"]
+dependencies = ["linux", "prepare_qcow", "module"]
 
 [tasks.default]
 alias = "run"
