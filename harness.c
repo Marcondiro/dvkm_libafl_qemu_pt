@@ -57,8 +57,8 @@ int main()
     io_buffer.data = input_iter;
 
     ret = ioctl(fd, IOCTL(ioctl_num), &io_buffer);
-
-    printf("dvkm ret: %d\nBye!", ret);
+ 
+    printf("dvkm ret: %d\nBye!\n", ret);
     close(fd);
     return 0;
 }

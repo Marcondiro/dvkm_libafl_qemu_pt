@@ -1,3 +1,9 @@
+[env.development]
+PROFILE_DIR = "debug"
+
+[env.release]
+PROFILE_DIR = "release"
+
 [tasks.linux_defconfig]
 cwd = "linux"
 command = "make"
@@ -35,7 +41,7 @@ command = "qemu-img"
 args = ["create", "-f", "qcow2", "dvkm.qcow2", "64M"]
 
 [tasks.prepare_qcow]
-dependencies = ["create_qcow", "module"]
+dependencies = ["create_qcow", "module", "harness"]
 script = [
   "sudo modprobe nbd",
   "sudo qemu-nbd -c /dev/nbd0 dvkm.qcow2",
@@ -43,7 +49,7 @@ script = [
   "sudo mkdir -p /mnt/qcow2_mount",
   "sudo mount /dev/nbd0 /mnt/qcow2_mount",
   "sudo cp Damn_Vulnerable_Kernel_Module/dvkm.ko /mnt/qcow2_mount/",
-  #"sudo cp test_dvkm /mnt/qcow2_mount/",
+  "sudo cp harness /mnt/qcow2_mount/",
   "sudo umount /mnt/qcow2_mount",
   # Disconnect NBD device
   "sudo qemu-nbd -d /dev/nbd0",
@@ -59,7 +65,13 @@ script = [
   "mv Makefile.bak Makefile",
 ]
 
+[tasks.initrd]
+dependencies = ["linux"]
+cwd = "linux/arch/x86/boot/"
+script = "sudo mkinitramfs -o ../../../../initrd.img"
+
 [tasks.harness]
+dependencies = ["linux"]
 command = "gcc"
 args = [
   "-I./linux-source/include",
@@ -71,8 +83,40 @@ args = [
   "harness",
   "harness.c",
 ]
+
+[tasks.prepare_target]
+dependencies = ["linux", "prepare_qcow", "initrd", "harness"]
+
+[tasks.boot_target]
+dependencies = ["prepare_target"]
+command = "qemu-system-x86_64"
+args = [
+  "-kernel",
+  "./linux/arch/x86_64/boot/bzImage",
+  "-initrd",
+  "initrd.img",
+  "-m",
+  "1G",
+  "-nographic",
+  "-append",
+  "console=ttyS0",
+  "-accel",
+  "kvm",
+  "-drive",
+  "file=./dvkm.qcow2",
+  "-monitor",
+  "tcp::4444,server,nowait",
+  "-cpu",
+  "host",
+  "-s",
+]
+
+[tasks.fuzzer]
+command = "cargo"
+args = ["build", "--profile", "${CARGO_MAKE_CARGO_PROFILE}"]
+
 [tasks.run]
-dependencies = ["linux", "prepare_qcow", "module"]
+command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
 
 [tasks.default]
 alias = "run"
