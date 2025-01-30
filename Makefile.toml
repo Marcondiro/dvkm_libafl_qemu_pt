@@ -4,6 +4,9 @@ PROFILE_DIR = "debug"
 [env.release]
 PROFILE_DIR = "release"
 
+[tasks.target_dir]
+script = ["mkdir -p ${CARGO_TARGET_DIR}"]
+
 [tasks.linux_defconfig]
 cwd = "linux"
 command = "make"
@@ -37,19 +40,20 @@ command = "make"
 args = ["-j"]
 
 [tasks.create_qcow]
+dependencies = ["target_dir"]
 command = "qemu-img"
-args = ["create", "-f", "qcow2", "dvkm.qcow2", "64M"]
+args = ["create", "-f", "qcow2", "target/dvkm.qcow2", "64M"]
 
 [tasks.prepare_qcow]
 dependencies = ["create_qcow", "module", "harness"]
 script = [
   "sudo modprobe nbd",
-  "sudo qemu-nbd -c /dev/nbd0 dvkm.qcow2",
+  "sudo qemu-nbd -c /dev/nbd0 target/dvkm.qcow2",
   "sudo mkfs.ext2 /dev/nbd0",
   "sudo mkdir -p /mnt/qcow2_mount",
   "sudo mount /dev/nbd0 /mnt/qcow2_mount",
   "sudo cp Damn_Vulnerable_Kernel_Module/dvkm.ko /mnt/qcow2_mount/",
-  "sudo cp harness /mnt/qcow2_mount/",
+  "sudo cp ./target/harness /mnt/qcow2_mount/",
   "sudo umount /mnt/qcow2_mount",
   # Disconnect NBD device
   "sudo qemu-nbd -d /dev/nbd0",
@@ -66,12 +70,12 @@ script = [
 ]
 
 [tasks.initrd]
-dependencies = ["linux"]
+dependencies = ["linux", "target_dir"]
 cwd = "linux/arch/x86/boot/"
-script = "sudo mkinitramfs -o ../../../../initrd.img"
+script = "sudo mkinitramfs -o ../../../../target/initrd.img"
 
 [tasks.harness]
-dependencies = ["linux"]
+dependencies = ["linux", "target_dir"]
 command = "gcc"
 args = [
   "-I./linux-source/include",
@@ -80,7 +84,7 @@ args = [
   "-no-pie",
   "-Wl,--section-start=.trigger_bp=0xaabb00",
   "-o",
-  "harness",
+  "target/harness",
   "harness.c",
 ]
 
@@ -94,7 +98,7 @@ args = [
   "-kernel",
   "./linux/arch/x86_64/boot/bzImage",
   "-initrd",
-  "initrd.img",
+  "target/initrd.img",
   "-m",
   "1G",
   "-nographic",
@@ -103,7 +107,7 @@ args = [
   "-accel",
   "kvm",
   "-drive",
-  "file=./dvkm.qcow2",
+  "file=./target/dvkm.qcow2",
   "-monitor",
   "tcp::4444,server,nowait",
   "-cpu",
@@ -111,12 +115,12 @@ args = [
   "-s",
 ]
 
-[tasks.fuzzer]
-command = "cargo"
-args = ["build", "--profile", "${CARGO_MAKE_CARGO_PROFILE}"]
+# [tasks.fuzzer]
+# command = "cargo"
+# args = ["build", "--profile", "${CARGO_MAKE_CARGO_PROFILE}"]
 
-[tasks.run]
-command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
+# [tasks.run]
+# command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
 
-[tasks.default]
-alias = "run"
+# [tasks.default]
+# alias = "run"
