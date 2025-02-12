@@ -5,7 +5,7 @@ PROFILE_DIR = "debug"
 PROFILE_DIR = "release"
 
 [tasks.target_dir]
-script = ["mkdir -p ${CARGO_TARGET_DIR}"]
+script = ["mkdir -p ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}"]
 
 [tasks.linux_defconfig]
 cwd = "linux"
@@ -82,7 +82,7 @@ args = [
   "-Wall",
   "-Wextra",
   "-no-pie",
-  "-Wl,--section-start=.trigger_bp=0xaabb00",
+  "-Wl,--section-start=.trigger_bp=0xaabb00,--section-start=.trigger_bp_2=0xbbaa00",
   "-o",
   "target/harness",
   "harness.c",
@@ -112,15 +112,25 @@ args = [
   "tcp::4444,server,nowait",
   "-cpu",
   "host",
+  "-machine",
+  "pc-i440fx-8.2",
   "-s",
+  "-nodefaults",
+  "-serial",
+  "stdio",
 ]
 
-# [tasks.fuzzer]
-# command = "cargo"
-# args = ["build", "--profile", "${CARGO_MAKE_CARGO_PROFILE}"]
+[tasks.build_fuzzer]
+command = "cargo"
+args = ["build", "--profile", "${CARGO_MAKE_CARGO_PROFILE}"]
 
-# [tasks.run]
-# command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
+[tasks.setcap]
+script = "sudo setcap cap_ipc_lock,cap_sys_ptrace,cap_sys_admin,cap_syslog=ep ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
+dependencies = ["build_fuzzer"]
+
+[tasks.run_fuzzer]
+dependencies = ["build_fuzzer", "setcap"]
+command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
 
 # [tasks.default]
 # alias = "run"

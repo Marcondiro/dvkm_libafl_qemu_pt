@@ -1,9 +1,13 @@
 [package]
 name = "dvkm_libafl_qemu_pt"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+libafl = { path = "../LibAFL/libafl", default-features = false }
+libafl_bolts = { path = "../LibAFL/libafl_bolts" }
 libafl_qemu = { path = "../LibAFL/libafl_qemu", default-features = false, features = [
   "intel_pt",
 ] }
+
+env_logger = "0.11.5"
