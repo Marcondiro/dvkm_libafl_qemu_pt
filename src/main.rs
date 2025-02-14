@@ -112,6 +112,29 @@ fn main() {
 
     qemu.set_hw_breakpoint(NEEDLE_STOP_FUZZER).unwrap();
 
+    let oops_exit_raw = fs::read(Path::new("target/kallsyms/oops_exit")).unwrap();
+    let oops_exit = GuestAddr::from_str_radix(
+        String::from_utf8(oops_exit_raw)
+            .unwrap()
+            .trim()
+            .trim_start_matches("0x"),
+        16,
+    )
+    .unwrap();
+    let kasan_report_raw = fs::read(Path::new("target/kallsyms/kasan_report")).unwrap();
+    let kasan_report = u64::from_str_radix(
+        String::from_utf8(kasan_report_raw)
+            .unwrap()
+            .trim()
+            .trim_start_matches("0x"),
+        16,
+    )
+    .unwrap();
+
+    // TODO use the correct address from files
+    qemu.set_hw_breakpoint(oops_exit).unwrap();
+    qemu.set_hw_breakpoint(kasan_report).unwrap();
+
     let mut harness = |emulator: &mut Emulator<_, _, _, _, _, _, _>,
                        _: &mut StdState<_, _, _, _>,
                        input: &BytesInput| unsafe {
@@ -124,11 +147,10 @@ fn main() {
         qemu.load_snapshot("pre_fuzz", true);
         qemu.write_mem(INPUT_ADDRESS, truncated_input).unwrap();
         match emulator.qemu().run() {
-            Ok(QemuExitReason::Breakpoint(_ip)) => {
-                //TODO ip coming from qemu is wrong
-                ExitKind::Ok
+            Ok(QemuExitReason::Breakpoint(NEEDLE_STOP_FUZZER)) => ExitKind::Ok,
+            Ok(QemuExitReason::Breakpoint(bp)) if bp == oops_exit || bp == kasan_report => {
+                ExitKind::Crash
             }
-            Ok(QemuExitReason::Timeout) => ExitKind::Timeout,
             e => panic!("Harness Unexpected QEMU exit. {e:?}"),
         }
     };

@@ -36,8 +36,7 @@ args = ["olddefconfig"]
 [tasks.linux]
 dependencies = ["linux_olddefconfig"]
 cwd = "linux"
-command = "make"
-args = ["-j"]
+script = "make -j$(( (n=$(nproc)) > 1 ? n-1 : 1 ))"
 
 [tasks.create_qcow]
 dependencies = ["target_dir"]
@@ -131,6 +130,3 @@ dependencies = ["build_fuzzer"]
 [tasks.run_fuzzer]
 dependencies = ["build_fuzzer", "setcap"]
 command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${PROFILE_DIR}/${CARGO_MAKE_CRATE_NAME}"
-
-# [tasks.default]
-# alias = "run"

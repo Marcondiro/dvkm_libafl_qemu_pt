@@ -62,16 +62,6 @@ int main()
         }
     }
 
-    asm volatile(
-        "mov $100, %%rcx\n"  // Load loop count into RCX
-        "1:\n"               // Label for loop start
-        "nop\n"              // No-operation instruction
-        "loop 1b\n"          // Decrement RCX and loop if not zero
-        :
-        :
-        : "rcx"              // Clobbered register
-    );
-
     // possible IOCTLs fuzzed:
     // 0: DVKM_IOCTL_INTEGER_OVERFLOW IOCTL
     // 1: DVKM_IOCTL_INTEGER_UNDERFLOW IOCTL
@@ -90,16 +80,6 @@ int main()
     ret = ioctl(fd, IOCTL(ioctl_num), &io_buffer);
  
     printf("dvkm ret: %d\nBye!\n", ret);
-
-    asm volatile(
-        "mov $100, %%rcx\n"  // Load loop count into RCX
-        "1:\n"               // Label for loop start
-        "nop\n"              // No-operation instruction
-        "loop 1b\n"          // Decrement RCX and loop if not zero
-        :
-        :
-        : "rcx"              // Clobbered register
-    );
 
     libafl_qemu_trigger_bp_2();
 

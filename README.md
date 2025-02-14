@@ -60,16 +60,19 @@
     c
     ```
 
-8. In the VM copy the kernel module's section addresses to the drive
+8. In the VM copy the kernel module's section addresses and the error handlers addresses to the drive, then print out the .text section address
 
     ```bash
     # inside the VM
+    mkdir -p /sda/kallsyms
+    grep " oops_exit$" /proc/kallsyms | awk '{print $1}' > /sda/kallsyms/oops_exit
+    grep " kasan_report$" /proc/kallsyms | awk '{print $1}' > /sda/kallsyms/kasan_report
     cp -r /sys/module/dvkm/sections/ /sda/sections
     umount /dev/sda
     cat /sys/module/dvkm/sections/.text
     ```
 
-9. Dump the kernel module executable memory from gdb taking the addresses from the previous step (CTRL + C in gdb to interrupt the vm)
+9. Dump the kernel module executable memory from gdb, **replace the addresses with the ouput of the previous step** (CTRL + C in gdb to interrupt the vm)
 
     ```gdb
     dump binary memory ./target/dump.bin <REPLACE WITH PREVIOUS POINT cat /sys/module/dvkm/sections/.text> <REPLACE WITH /sys/module/dvkm/sections/.text adding 0x1000>
@@ -79,13 +82,15 @@
 
 11. Exit the VM  with CTRL + C
 
-12. Copy the sections to the host
+12. Copy the sections addresses to the host
 
     ```bash
     sudo qemu-nbd --read-only -c /dev/nbd0 target/dvkm.qcow2
     sudo mount -o ro /dev/nbd0 /mnt/qcow2_mount
     sudo cp -r /mnt/qcow2_mount/sections target/
+    sudo cp -r /mnt/qcow2_mount/kallsyms target/
     sudo chown -R "$(whoami)":"$(whoami)" target/sections
+    sudo chown -R "$(whoami)":"$(whoami)" target/kallsyms
     sudo umount /mnt/qcow2_mount
     sudo qemu-nbd -d /dev/nbd0
     ```
