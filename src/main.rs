@@ -21,7 +21,7 @@ use libafl_qemu::{
     Emulator, EmulatorBuilder, GuestAddr, QemuExecutor, QemuExitReason,
 };
 use std::{
-    fs,
+    env, fs,
     num::NonZero,
     path::{Path, PathBuf},
     time::Duration,
@@ -41,12 +41,13 @@ fn main() {
 
     let timeout = Duration::from_secs(4);
     let objective_dir = PathBuf::from("./crashes");
+    let target_dir = env::var("TARGET_DIR").unwrap_or("target".to_string());
 
     let mon = SimpleMonitor::new(|s| println!("{s}"));
     let mut mgr = SimpleEventManager::new(mon);
 
     let qemu_config = QemuConfig::builder()
-        .kernel("./linux/arch/x86_64/boot/bzImage")
+        .kernel(format!("{target_dir}/linux/arch/x86_64/boot/bzImage"))
         .initrd("target/initrd.img")
         .accelerator(Accelerator::Kvm)
         .no_graphic(true)

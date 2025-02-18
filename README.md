@@ -1,6 +1,6 @@
 # dvkm_libafl_qemu_pt
 
-[Damn_Vulnerable_Kernel_Module](https://github.com/hardik05/Damn_Vulnerable_Kernel_Module/) fuzzer based on [libafl](https://github.com/AFLplusplus/LibAFL) with Intel PT tracing.
+[Damn_Vulnerable_Kernel_Module](https://github.com/hardik05/Damn_Vulnerable_Kernel_Module/) fuzzer based on [libafl QEMU KVM](https://github.com/AFLplusplus/LibAFL) with Intel PT tracing.
 
 ## Requirements
 
@@ -24,14 +24,13 @@
     cargo make boot_target
     ```
 
-3. Install DVKM in the vm and disable ASLR
+3. Install DVKM in the vm
 
     ```bash
     # inside the VM
     mkdir /sda && \
     mount /dev/sda /sda && \
-    insmod /sda/dvkm.ko && \
-    echo 0 | tee /proc/sys/kernel/randomize_va_space
+    insmod /sda/dvkm.ko
     ```
 
 4. In a new terminal attach gdb to the running VM and add a HW breakpoint at the liabafl needle address
@@ -75,7 +74,7 @@
 9. Dump the kernel module executable memory from gdb, **replace the addresses with the ouput of the previous step** (CTRL + C in gdb to interrupt the vm)
 
     ```gdb
-    dump binary memory ./target/dump.bin <REPLACE WITH PREVIOUS POINT cat /sys/module/dvkm/sections/.text> <REPLACE WITH /sys/module/dvkm/sections/.text adding 0x1000>
+    dump binary memory ./target/dump.bin <REPLACE WITH PREVIOUS POINT cat /sys/module/dvkm/sections/.text output> <REPLACE WITH /sys/module/dvkm/sections/.text adding 0x1000>
     ```
 
 10. Quit `gdb` (with `quit` + `y`)

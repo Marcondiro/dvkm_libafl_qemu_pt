@@ -2,6 +2,7 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #define DVKM_IOCTL_MAGIC ('D')
 #define IOCTL(NUM) _IOWR(DVKM_IOCTL_MAGIC, NUM, struct dvkm_obj)
@@ -69,11 +70,11 @@ int main()
     // 3: DVKM_IOCTL_HEAP_BUFFER_OVERFLOW IOCTL
     ioctl_num = input_iter[0] % 4;
     ++input_iter;
-    io_buffer.width = *((int *)input_iter);
+    memcpy(&io_buffer.width, input_iter, sizeof(int));
     input_iter += sizeof(int);
-    io_buffer.height = *((int *)input_iter);
+    memcpy(&io_buffer.height, input_iter, sizeof(int));
     input_iter += sizeof(int);
-    io_buffer.datasize = *((int *)input_iter);
+    memcpy(&io_buffer.datasize, input_iter, sizeof(int));
     input_iter += sizeof(int);
     io_buffer.data = input_iter;
 

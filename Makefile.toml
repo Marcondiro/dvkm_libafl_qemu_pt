@@ -8,15 +8,18 @@ PROFILE_DIR = "release"
 script = ["mkdir -p ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}"]
 
 [tasks.linux_defconfig]
+dependencies = ["target_dir"]
 cwd = "linux"
 command = "make"
-args = ["x86_64_defconfig"]
+args = ["x86_64_defconfig", "O=${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux"]
 
 [tasks.linux_config]
 dependencies = ["linux_defconfig"]
 cwd = "linux"
 command = "./scripts/config"
 args = [
+  "--file",
+  "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux/.config",
   "--disable",
   "MODULE_SIG",
   "--disable",
@@ -31,28 +34,34 @@ args = [
 dependencies = ["linux_config"]
 cwd = "linux"
 command = "make"
-args = ["olddefconfig"]
+args = ["olddefconfig", "O=${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux/"]
 
 [tasks.linux]
 dependencies = ["linux_olddefconfig"]
 cwd = "linux"
-script = "make -j$(( (n=$(nproc)) > 1 ? n-1 : 1 ))"
+script = "make -j$(( (n=$(nproc)) > 1 ? n-1 : 1 )) O=${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux/"
 
 [tasks.create_qcow]
 dependencies = ["target_dir"]
 command = "qemu-img"
-args = ["create", "-f", "qcow2", "target/dvkm.qcow2", "64M"]
+args = [
+  "create",
+  "-f",
+  "qcow2",
+  "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/dvkm.qcow2",
+  "64M",
+]
 
 [tasks.prepare_qcow]
 dependencies = ["create_qcow", "module", "harness"]
 script = [
   "sudo modprobe nbd",
-  "sudo qemu-nbd -c /dev/nbd0 target/dvkm.qcow2",
+  "sudo qemu-nbd -c /dev/nbd0 ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/dvkm.qcow2",
   "sudo mkfs.ext2 /dev/nbd0",
   "sudo mkdir -p /mnt/qcow2_mount",
   "sudo mount /dev/nbd0 /mnt/qcow2_mount",
   "sudo cp Damn_Vulnerable_Kernel_Module/dvkm.ko /mnt/qcow2_mount/",
-  "sudo cp ./target/harness /mnt/qcow2_mount/",
+  "sudo cp ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/harness /mnt/qcow2_mount/",
   "sudo umount /mnt/qcow2_mount",
   # Disconnect NBD device
   "sudo qemu-nbd -d /dev/nbd0",
@@ -63,7 +72,7 @@ cwd = "Damn_Vulnerable_Kernel_Module"
 dependencies = ["linux"]
 script = [
   "cp Makefile Makefile.bak",
-  "sed -i 's#make -C /lib/modules/$(KVERSION)/build M=$(PWD)#make -I../linux/include -C../linux M=$(PWD)#' Makefile",
+  "sed -i 's#make -C /lib/modules/$(KVERSION)/build M=$(PWD)#make -I ../linux/include -I ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux/include -C${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux M=$(PWD)#' Makefile",
   "make",
   "mv Makefile.bak Makefile",
 ]
@@ -71,7 +80,7 @@ script = [
 [tasks.initrd]
 dependencies = ["linux", "target_dir"]
 cwd = "linux/arch/x86/boot/"
-script = "sudo mkinitramfs -o ../../../../target/initrd.img"
+script = "sudo mkinitramfs -o ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/initrd.img"
 
 [tasks.harness]
 dependencies = ["linux", "target_dir"]
@@ -83,21 +92,25 @@ args = [
   "-no-pie",
   "-Wl,--section-start=.trigger_bp=0xaabb00,--section-start=.trigger_bp_2=0xbbaa00",
   "-o",
-  "target/harness",
+  "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/harness",
   "harness.c",
 ]
 
 [tasks.prepare_target]
 dependencies = ["linux", "prepare_qcow", "initrd", "harness"]
+script = [
+  "ln -f -s /usr/share/qemu/linuxboot_dma.bin linuxboot_dma.bin",
+  "ln -f -s /usr/share/qemu/kvmvapic.bin kvmvapic.bin",
+]
 
 [tasks.boot_target]
 dependencies = ["prepare_target"]
 command = "qemu-system-x86_64"
 args = [
   "-kernel",
-  "./linux/arch/x86_64/boot/bzImage",
+  "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/linux/arch/x86_64/boot/bzImage",
   "-initrd",
-  "target/initrd.img",
+  "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/initrd.img",
   "-m",
   "1G",
   "-nographic",
@@ -106,7 +119,7 @@ args = [
   "-accel",
   "kvm",
   "-drive",
-  "file=./target/dvkm.qcow2",
+  "file=${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/dvkm.qcow2",
   "-monitor",
   "tcp::4444,server,nowait",
   "-cpu",
