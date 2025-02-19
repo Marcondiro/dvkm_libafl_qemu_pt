@@ -152,7 +152,7 @@ fn main() {
             Ok(QemuExitReason::Breakpoint(bp)) if bp == oops_exit || bp == kasan_report => {
                 ExitKind::Crash
             }
-            e => panic!("Harness Unexpected QEMU exit. {e:?}"),
+            e => panic!("Harness Unexpected QEMU exit. {e:x?}"),
         }
     };
 

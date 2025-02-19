@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-libafl = { git = "https://github.com/Marcondiro/LibAFL", rev = "ac8b365", default-features = false }
-libafl_bolts = { git = "https://github.com/Marcondiro/LibAFL", rev = "ac8b365" }
-libafl_qemu = { git = "https://github.com/Marcondiro/LibAFL", rev = "ac8b365", default-features = false, features = [
+libafl = { git = "https://github.com/Marcondiro/LibAFL", rev = "f23cf93", default-features = false }
+libafl_bolts = { git = "https://github.com/Marcondiro/LibAFL", rev = "f23cf93" }
+libafl_qemu = { git = "https://github.com/Marcondiro/LibAFL", rev = "f23cf93", default-features = false, features = [
   "intel_pt",
 ] }
 env_logger = "0.11.5"
