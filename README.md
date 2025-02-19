@@ -7,7 +7,7 @@
 - Rust
 - [cargo-make](https://github.com/sagiegurari/cargo-make)
 - linux build requirements
-- linux 6.8.y (or update the submodule ecc accordingly)
+- maybe linux 6.8.y
 - QEMU
 
 ## Build & Run
@@ -15,7 +15,7 @@
 1. Clone the project including the submodules
 
     ```bash
-    git clone --recurse-submodules
+    git clone --recurse-submodules --shallow-submodules https://github.com/Marcondiro/dvkm_libafl_qemu_pt
     ```
 
 2. Boot the target VM
