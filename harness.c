@@ -28,8 +28,7 @@ void libafl_qemu_trigger_bp(void)
         "retq\n");
 }
 
-// Easy to find function in .trigger_bp section
-// naked attribute makes sure the function address will be == section start
+// Easy to find function in .trigger_bp_2 section
 void libafl_qemu_trigger_bp_2(void) __attribute__((section(".trigger_bp_2"), naked));
 void libafl_qemu_trigger_bp_2(void)
 {

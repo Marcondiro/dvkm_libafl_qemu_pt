@@ -86,7 +86,6 @@ script = "sudo mkinitramfs -o ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/initrd.img"
 dependencies = ["linux", "target_dir"]
 command = "gcc"
 args = [
-  "-I./linux-source/include",
   "-Wall",
   "-Wextra",
   "-no-pie",

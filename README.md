@@ -7,7 +7,7 @@
 - Rust
 - [cargo-make](https://github.com/sagiegurari/cargo-make)
 - linux build requirements
-- maybe linux 6.8.y
+- maybe linux 6.8.y (or checkout the right kernel corresponding to your host, otherwise the initrd won't work?)
 - QEMU
 
 ## Build & Run
